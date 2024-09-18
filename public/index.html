@@ -253,7 +253,7 @@
         const platform = document.getElementById("platform").value;
         const socialid = document.getElementById("socialid").value;
         const caption = document.getElementById("caption").value;
-        const image = document.getElementById("image").files.length;
+        const imageFile = document.getElementById("image").files[0];
 
         const statusMessage = document.getElementById("statusMessage");
 
@@ -271,24 +271,88 @@
           return;
         }
 
-        if (image === 0) {
+        if (!imageFile) {
           statusMessage.textContent = "Please upload an image.";
           statusMessage.style.color = "red";
           return;
         }
 
-        // If all validations pass
-        var formData = new FormData(event.target);
+        const maxSize = 1 * 1024 * 1024; // 1MB
+        if (imageFile.size > maxSize) {
+          // Create an image element to load the file
+          const img = new Image();
+          const reader = new FileReader();
 
+          reader.onload = function (e) {
+            img.src = e.target.result;
+
+            img.onload = function () {
+              // Create a canvas to resize the image
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+
+              // Set desired width and height
+              const MAX_WIDTH = 800; // you can adjust this
+              const MAX_HEIGHT = 800; // you can adjust this
+              let width = img.width;
+              let height = img.height;
+
+              // Calculate the new dimensions
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height *= MAX_WIDTH / width;
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width *= MAX_HEIGHT / height;
+                  height = MAX_HEIGHT;
+                }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // Convert the canvas to a Blob
+              canvas.toBlob(
+                function (blob) {
+                  const resizedFile = new File([blob], imageFile.name, {
+                    type: imageFile.type,
+                    lastModified: Date.now(),
+                  });
+
+                  // Prepare FormData and add resized file
+                  const formData = new FormData(event.target);
+                  formData.set("image", resizedFile);
+
+                  // Proceed to send the form data
+                  uploadFormData(formData);
+                },
+                imageFile.type,
+                0.8
+              ); // Quality can be adjusted (0.8 means 80%)
+            };
+          };
+
+          reader.readAsDataURL(imageFile);
+        } else {
+          // If image is already within size limit, proceed directly
+          uploadFormData(new FormData(event.target));
+        }
+      };
+
+      function uploadFormData(formData) {
         fetch("/upload", {
           method: "POST",
           body: formData,
         })
           .then((response) => response.json())
           .then((data) => {
+            const statusMessage = document.getElementById("statusMessage");
             statusMessage.textContent = "Upload successful!";
             statusMessage.style.color = "green";
-            event.target.reset(); // Clear the form fields
+            document.getElementById("uploadForm").reset(); // Clear the form fields
             // Hide social ID field and label after successful submission
             document.getElementById("socialid").style.display = "none";
             document.getElementById("socialidLabel").style.display = "none";
@@ -300,10 +364,11 @@
           })
           .catch((error) => {
             console.error("Error:", error);
+            const statusMessage = document.getElementById("statusMessage");
             statusMessage.textContent = "Upload failed. Please try again.";
             statusMessage.style.color = "red";
           });
-      };
+      }
     </script>
   </body>
 </html>
