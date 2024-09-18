@@ -277,7 +277,7 @@
           return;
         }
 
-        const maxSize = 1 * 1024 * 1024; // 1MB
+        const maxSize = 2 * 1024 * 1024; // 1MB
         if (imageFile.size > maxSize) {
           // Create an image element to load the file
           const img = new Image();
@@ -292,8 +292,8 @@
               const ctx = canvas.getContext("2d");
 
               // Set desired width and height
-              const MAX_WIDTH = 800; // you can adjust this
-              const MAX_HEIGHT = 800; // you can adjust this
+              const MAX_WIDTH = 1920; // you can adjust this
+              const MAX_HEIGHT = 1080; // you can adjust this
               let width = img.width;
               let height = img.height;
 
