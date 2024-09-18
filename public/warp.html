@@ -82,9 +82,9 @@
         <div id="text">Text here</div>
       </div>
     </div>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-      const socket = io("https://api-1.spi.co.th/lpr-api-jp");
+      const socket = io();
       const imageElement = document.getElementById("image");
       const textElement = document.getElementById("text");
       const socialidElement = document.getElementById("socialid");
