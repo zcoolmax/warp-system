@@ -75,16 +75,16 @@
   </head>
   <body>
     <div class="container">
-      <img id="image" src="/background.jpg" alt="Example Image" />
+      <img id="image" src="background.jpg" alt="Example Image" />
       <div id="content">
         <div id="platformIcon"></div>
         <div id="socialid">Social</div>
         <div id="text">Text here</div>
       </div>
     </div>
-    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-      const socket = io();
+      const socket = io("https://api-1.spi.co.th/lpr-api-jp");
       const imageElement = document.getElementById("image");
       const textElement = document.getElementById("text");
       const socialidElement = document.getElementById("socialid");
