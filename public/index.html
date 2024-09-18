@@ -133,9 +133,30 @@
       #acceptButton:hover {
         background-color: #0056b3;
       }
+      #overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      #overlayContent {
+        color: #fff;
+        font-size: 20px;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
+    <div id="overlay" style="display: none">
+      <div id="overlayContent">กำลังทำรายการ...</div>
+    </div>
     <!-- Modal -->
     <div id="modal">
       <div id="modalContent">
@@ -147,7 +168,7 @@
           <li>กรอก ID ของแพลตฟอร์มที่เลือกไว้</li>
           <li>ป้อนแคปชั่นที่ต้องการจะสื่อสาร</li>
           <li>เลือกไฟล์รูปภาพที่ต้องการอัปโหลด</li>
-          <li>คลิกปุ่ม <strong>Submit</strong> เพื่อส่งข้อมูล</li>
+          <li>คลิกปุ่ม <strong>ส่งข้อมูล</strong> เพื่อทำรายการต่อ</li>
           <li>รูปภาพจะปรากฏเป็นเวลา 30 วินาที จากนั้นจะหายไปอัตโนมัติ</li>
         </ol>
         <h1>เงื่อนไขการใช้งานโปรแกรม</h1>
@@ -187,21 +208,21 @@
     </div>
 
     <form id="uploadForm" enctype="multipart/form-data">
-      <label for="platform">Choose a platform:</label>
+      <label for="platform">แพลตฟอร์มที่ต้องการแจก ID:</label>
       <select id="platform" name="platform">
-        <option value="" selected>Select a platform</option>
+        <option value="" selected>ไม่มี</option>
         <option value="instagram">Instagram</option>
         <option value="line">Line</option>
         <option value="facebook">Facebook</option>
       </select>
-      <label id="socialidLabel" for="socialid">Social ID:</label>
+      <label id="socialidLabel" for="socialid">ID ของแพลตฟอร์ม:</label>
       <input type="text" id="socialid" name="socialid" />
-      <label for="caption">Caption:</label>
+      <label for="caption">แคปชั่นหรือสิ่งที่อยากจะบอก:</label>
       <input type="text" id="caption" name="caption" />
-      <label for="image">Upload Image:</label>
+      <label for="image">รูปภาพที่จะให้แสดงบนหน้าจอ:</label>
       <input type="file" id="image" name="image" />
       <div id="statusMessage"></div>
-      <button type="submit">Submit</button>
+      <button type="submit">ส่งข้อมูล</button>
     </form>
 
     <script>
@@ -260,20 +281,19 @@
 
         // Validation checks
         if (platform && !socialid) {
-          statusMessage.textContent =
-            "Please enter Social ID when a platform is selected.";
+          statusMessage.textContent = "กรุณากรอก Social ID เมื่อเลือกแพลตฟอร์ม";
           statusMessage.style.color = "red";
           return;
         }
 
         if (!caption) {
-          statusMessage.textContent = "Please enter a caption.";
+          statusMessage.textContent = "กรุณาใส่แคปชั่นหรือสิ่งที่อยากจะบอก";
           statusMessage.style.color = "red";
           return;
         }
 
         if (!imageFile) {
-          statusMessage.textContent = "Please upload an image.";
+          statusMessage.textContent = "กรุณาอัพโหลดรูปภาพ";
           statusMessage.style.color = "red";
           return;
         }
@@ -281,7 +301,7 @@
         const allowedTypes = ["image/jpeg", "image/png"];
         if (imageFile && !allowedTypes.includes(imageFile.type)) {
           statusMessage.textContent =
-            "Please upload a valid image file (JPEG or PNG).";
+            "โปรดอัปโหลดไฟล์รูปภาพที่ถูกต้อง (JPEG หรือ PNG)";
           statusMessage.style.color = "red";
           return;
         }
@@ -352,6 +372,9 @@
       };
 
       function uploadFormData(formData) {
+        // แสดง overlay
+        document.getElementById("overlay").style.display = "flex";
+
         fetch("/upload", {
           method: "POST",
           body: formData,
@@ -359,10 +382,9 @@
           .then((response) => response.json())
           .then((data) => {
             const statusMessage = document.getElementById("statusMessage");
-            statusMessage.textContent = "Upload successful!";
+            statusMessage.textContent = "เข้าคิวแสดงรูปภาพสำเร็จ!!";
             statusMessage.style.color = "green";
             document.getElementById("uploadForm").reset(); // Clear the form fields
-            // Hide social ID field and label after successful submission
             document.getElementById("socialid").style.display = "none";
             document.getElementById("socialidLabel").style.display = "none";
 
@@ -374,8 +396,12 @@
           .catch((error) => {
             console.error("Error:", error);
             const statusMessage = document.getElementById("statusMessage");
-            statusMessage.textContent = "Upload failed. Please try again.";
+            statusMessage.textContent = "การอัพโหลดล้มเหลว กรุณาลองอีกครั้ง";
             statusMessage.style.color = "red";
+          })
+          .finally(() => {
+            // ซ่อน overlay
+            document.getElementById("overlay").style.display = "none";
           });
       }
     </script>
