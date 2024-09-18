@@ -84,9 +84,15 @@
         padding: 20px;
         width: 80%;
         max-width: 600px;
-        max-height: 80vh;
+        max-height: 80vh; /* Limit the height of the modal */
         position: relative;
-        overflow-y: auto;
+        overflow-y: auto; /* Enable vertical scrolling */
+      }
+      #modalContent h1,
+      #modalContent h2,
+      #modalContent p {
+        margin: 0;
+        padding-bottom: 10px;
       }
       #closeModal {
         position: absolute;
@@ -105,27 +111,27 @@
         cursor: pointer;
         outline: none;
       }
-      #overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+      #closeModal:hover {
+        background-color: #c82333;
       }
-      #loadingMessage {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+      #modalFooter {
+        text-align: center;
+        margin-top: 20px;
+        bottom: 0; /* Align footer at the bottom of the modal */
         background: #fff;
+      }
+      #acceptButton {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
         padding: 10px 20px;
+        font-size: 16px;
         border-radius: 4px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      #acceptButton:hover {
+        background-color: #0056b3;
       }
     </style>
   </head>
@@ -174,11 +180,11 @@
         <p>
           การใช้โปรแกรมอย่างรับผิดชอบจะช่วยให้การใช้งานเป็นไปอย่างราบรื่นและสนุกสนานสำหรับทุกคน
         </p>
+        <div id="modalFooter">
+          <button id="acceptButton">ยอมรับ</button>
+        </div>
       </div>
     </div>
-
-    <div id="overlay"></div>
-    <div id="loadingMessage">Loading...</div>
 
     <form id="uploadForm" enctype="multipart/form-data">
       <label for="platform">Choose a platform:</label>
@@ -231,12 +237,14 @@
           const platform = this.value;
           const socialidElement = document.getElementById("socialid");
           const socialidLabel = document.getElementById("socialidLabel");
+
           if (platform) {
             socialidElement.style.display = "block";
-            socialidLabel.style.display = "block";
+            socialidLabel.style.display = "block"; // Show label if platform is selected
+            socialidElement.value = ""; // Clear social ID if platform is selected
           } else {
             socialidElement.style.display = "none";
-            socialidLabel.style.display = "none";
+            socialidLabel.style.display = "none"; // Hide label if platform is not selected
           }
         });
 
@@ -249,57 +257,96 @@
         const imageFile = document.getElementById("image").files[0];
 
         const statusMessage = document.getElementById("statusMessage");
-        const loadingMessage = document.getElementById("loadingMessage");
-
-        // Show loading message and overlay
-        loadingMessage.style.display = "block";
-        document.getElementById("overlay").style.display = "block"; // Show overlay
 
         // Validation checks
         if (platform && !socialid) {
           statusMessage.textContent =
             "Please enter Social ID when a platform is selected.";
           statusMessage.style.color = "red";
-          loadingMessage.style.display = "none"; // Hide loading message
-          document.getElementById("overlay").style.display = "none"; // Hide overlay
           return;
         }
 
         if (!caption) {
           statusMessage.textContent = "Please enter a caption.";
           statusMessage.style.color = "red";
-          loadingMessage.style.display = "none"; // Hide loading message
-          document.getElementById("overlay").style.display = "none"; // Hide overlay
           return;
         }
 
         if (!imageFile) {
           statusMessage.textContent = "Please upload an image.";
           statusMessage.style.color = "red";
-          loadingMessage.style.display = "none"; // Hide loading message
-          document.getElementById("overlay").style.display = "none"; // Hide overlay
           return;
         }
 
-        // Check allowed file types
         const allowedTypes = ["image/jpeg", "image/png"];
         if (imageFile && !allowedTypes.includes(imageFile.type)) {
           statusMessage.textContent =
             "Please upload a valid image file (JPEG or PNG).";
           statusMessage.style.color = "red";
-          loadingMessage.style.display = "none"; // Hide loading message
-          document.getElementById("overlay").style.display = "none"; // Hide overlay
           return;
         }
 
-        const maxSize = 3 * 1024 * 1024; // 3MB
+        const maxSize = 3 * 1024 * 1024; // 1MB
         if (imageFile.size > maxSize) {
-          // Handle image resizing if needed
-          alert("Image is too large. Please upload an image smaller than 3MB.");
-          loadingMessage.style.display = "none"; // Hide loading message
-          document.getElementById("overlay").style.display = "none"; // Hide overlay
-          return;
+          // Create an image element to load the file
+          const img = new Image();
+          const reader = new FileReader();
+
+          reader.onload = function (e) {
+            img.src = e.target.result;
+
+            img.onload = function () {
+              // Create a canvas to resize the image
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+
+              // Set desired width and height
+              const MAX_WIDTH = 1920; // you can adjust this
+              const MAX_HEIGHT = 1080; // you can adjust this
+              let width = img.width;
+              let height = img.height;
+
+              // Calculate the new dimensions
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height *= MAX_WIDTH / width;
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width *= MAX_HEIGHT / height;
+                  height = MAX_HEIGHT;
+                }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // Convert the canvas to a Blob
+              canvas.toBlob(
+                function (blob) {
+                  const resizedFile = new File([blob], imageFile.name, {
+                    type: imageFile.type,
+                    lastModified: Date.now(),
+                  });
+
+                  // Prepare FormData and add resized file
+                  const formData = new FormData(event.target);
+                  formData.set("image", resizedFile);
+
+                  // Proceed to send the form data
+                  uploadFormData(formData);
+                },
+                imageFile.type,
+                0.8
+              ); // Quality can be adjusted (0.8 means 80%)
+            };
+          };
+
+          reader.readAsDataURL(imageFile);
         } else {
+          // If image is already within size limit, proceed directly
           uploadFormData(new FormData(event.target));
         }
       };
@@ -312,15 +359,14 @@
           .then((response) => response.json())
           .then((data) => {
             const statusMessage = document.getElementById("statusMessage");
-            const loadingMessage = document.getElementById("loadingMessage");
-            loadingMessage.style.display = "none"; // Hide loading message
-            document.getElementById("overlay").style.display = "none"; // Hide overlay
             statusMessage.textContent = "Upload successful!";
             statusMessage.style.color = "green";
-            document.getElementById("uploadForm").reset();
+            document.getElementById("uploadForm").reset(); // Clear the form fields
+            // Hide social ID field and label after successful submission
             document.getElementById("socialid").style.display = "none";
             document.getElementById("socialidLabel").style.display = "none";
 
+            // Hide statusMessage after 2 seconds
             setTimeout(() => {
               statusMessage.textContent = "";
             }, 2000);
@@ -328,9 +374,6 @@
           .catch((error) => {
             console.error("Error:", error);
             const statusMessage = document.getElementById("statusMessage");
-            const loadingMessage = document.getElementById("loadingMessage");
-            loadingMessage.style.display = "none"; // Hide loading message
-            document.getElementById("overlay").style.display = "none"; // Hide overlay
             statusMessage.textContent = "Upload failed. Please try again.";
             statusMessage.style.color = "red";
           });
