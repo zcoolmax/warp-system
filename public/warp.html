@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warp Page</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;700&display=swap"
+    />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: "Prompt", sans-serif; /* Use Prompt font */
+      }
+      body {
+        text-align: center;
+        background-color: black;
+        overflow: hidden;
+      }
+      .container {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #image,
+      #content {
+        transition: opacity 1s ease-in-out; /* Apply fade effect */
+      }
+      #image {
+        height: 100%;
+        width: auto;
+        opacity: 1;
+        transition: opacity 1s ease-in-out;
+      }
+      #content {
+        position: absolute;
+        bottom: 5%; /* 5% from the bottom */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%; /* 80% of the viewport width */
+        background-color: rgba(
+          0,
+          0,
+          0,
+          0.6
+        ); /* Black background with 60% opacity */
+        padding: 10px;
+        border-radius: 10px;
+        opacity: 0; /* Initially hidden */
+      }
+      #platformIcon,
+      #socialid,
+      #text {
+        color: rgb(255, 255, 255);
+        text-shadow: 1px 1px 2px black;
+        font-size: 1.5em;
+      }
+      #socialid {
+        font-size: 1em !important;
+      }
+      #platformIcon {
+        font-size: 2em; /* Larger icon size */
+      }
+      #socialid,
+      #text {
+        display: block; /* Ensure text elements are block for spacing */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img id="image" src="background.jpg" alt="Example Image" />
+      <div id="content">
+        <div id="platformIcon"></div>
+        <div id="socialid">Social</div>
+        <div id="text">Text here</div>
+      </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const imageElement = document.getElementById("image");
+      const textElement = document.getElementById("text");
+      const socialidElement = document.getElementById("socialid");
+      const platformIconElement = document.getElementById("platformIcon");
+      const contentElement = document.getElementById("content");
+      const defaultImage = "bbackground.jpg";
+      const displayDuration = 10000; // 10 seconds in milliseconds
+      let imageQueue = [];
+      let imageTimeout = null;
+
+      function fadeOutElements(elements, callback) {
+        elements.forEach((element) => {
+          element.style.opacity = 0;
+        });
+        setTimeout(callback, 1000); // 1 second for fade-out
+      }
+
+      function fadeInElements(elements) {
+        elements.forEach((element) => {
+          element.style.opacity = 1;
+        });
+      }
+
+      function displayNextImage() {
+        if (imageQueue.length > 0) {
+          const nextImage = imageQueue.shift();
+          fadeOutElements([imageElement, contentElement], () => {
+            imageElement.src = "/uploads/" + nextImage.image;
+            textElement.textContent = nextImage.caption;
+            socialidElement.textContent = nextImage.socialid;
+            platformIconElement.innerHTML = getPlatformIcon(nextImage.platform);
+            textElement.style.display = "block";
+            socialidElement.style.display = "block";
+            platformIconElement.style.display = nextImage.platform
+              ? "block"
+              : "none";
+            contentElement.style.display = "block"; // Ensure content is visible
+            fadeInElements([imageElement, contentElement]);
+
+            // Schedule next image display
+            imageTimeout = setTimeout(displayNextImage, displayDuration);
+          });
+        } else {
+          // No more images, revert to default image
+          fadeOutElements([imageElement, contentElement], () => {
+            imageElement.src = defaultImage;
+            textElement.textContent = "Text here";
+            socialidElement.textContent = "Social";
+            platformIconElement.innerHTML = "";
+            textElement.style.display = "none";
+            socialidElement.style.display = "none";
+            platformIconElement.style.display = "none";
+            contentElement.style.display = "none"; // Hide content
+            fadeInElements([imageElement, contentElement]);
+            // Clear the timeout when no more images
+            imageTimeout = null;
+          });
+        }
+      }
+
+      function getPlatformIcon(platform) {
+        switch (platform) {
+          case "instagram":
+            return '<i class="fa-brands fa-instagram"></i>';
+          case "line":
+            return '<i class="fa-brands fa-line"></i>';
+          case "facebook":
+            return '<i class="fa-brands fa-facebook"></i>';
+          default:
+            return "";
+        }
+      }
+
+      socket.on("update", function (data) {
+        imageQueue.push(data);
+
+        // Start displaying images if not already started
+        if (!imageTimeout) {
+          displayNextImage();
+        }
+      });
+
+      // Handle case when image queue becomes empty
+      function restartImageDisplay() {
+        if (imageQueue.length === 0 && imageTimeout === null) {
+          displayNextImage();
+        }
+      }
+
+      // To restart image display if needed
+      socket.on("restart", restartImageDisplay);
+    </script>
+  </body>
+</html>
