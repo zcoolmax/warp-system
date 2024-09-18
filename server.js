@@ -3,29 +3,38 @@ const multer = require("multer");
 const path = require("path");
 const http = require("http");
 const socketIo = require("socket.io");
+// const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 const PORT = 4000;
 
-const upload = multer({
-  dest: "uploads/",
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-});
+// Set up multer to handle file uploads temporarily
+const storage = multer.memoryStorage(); // Use memory storage to avoid saving files to disk
+const upload = multer({ storage });
 
+// Serve static files from the 'public' directory
 app.use(express.static("public"));
-app.use("/uploads", express.static("uploads"));
 
+// Handle image uploads
 app.post("/upload", upload.single("image"), (req, res) => {
   const caption = req.body.caption;
   const socialid = req.body.socialid;
-  const platform = req.body.platform || ""; // Get platform value
-  const image = req.file ? req.file.filename : "background.jpg";
-  io.emit("update", { caption, image, socialid, platform });
+  const platform = req.body.platform || "";
+
+  // Emit the image data and additional info via Socket.IO
+  io.emit("update", {
+    caption,
+    image: req.file.buffer.toString("base64"), // Encode the image as base64
+    socialid,
+    platform,
+  });
+
   res.json({ success: true });
 });
 
+// Serve HTML files
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });

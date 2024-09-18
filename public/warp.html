@@ -18,7 +18,7 @@
         height: 100%;
         margin: 0;
         padding: 0;
-        font-family: "Prompt", sans-serif; /* Use Prompt font */
+        font-family: "Prompt", sans-serif;
       }
       body {
         text-align: center;
@@ -35,7 +35,7 @@
       }
       #image,
       #content {
-        transition: opacity 1s ease-in-out; /* Apply fade effect */
+        transition: opacity 1s ease-in-out;
       }
       #image {
         height: 100%;
@@ -45,19 +45,14 @@
       }
       #content {
         position: absolute;
-        bottom: 5%; /* 5% from the bottom */
+        bottom: 5%;
         left: 50%;
         transform: translateX(-50%);
-        width: 80%; /* 80% of the viewport width */
-        background-color: rgba(
-          0,
-          0,
-          0,
-          0.6
-        ); /* Black background with 60% opacity */
+        width: 80%;
+        background-color: rgba(0, 0, 0, 0.6);
         padding: 10px;
         border-radius: 10px;
-        opacity: 0; /* Initially hidden */
+        opacity: 0;
       }
       #platformIcon,
       #socialid,
@@ -70,11 +65,11 @@
         font-size: 1em !important;
       }
       #platformIcon {
-        font-size: 2em; /* Larger icon size */
+        font-size: 2em;
       }
       #socialid,
       #text {
-        display: block; /* Ensure text elements are block for spacing */
+        display: block;
       }
     </style>
   </head>
@@ -95,7 +90,6 @@
       const socialidElement = document.getElementById("socialid");
       const platformIconElement = document.getElementById("platformIcon");
       const contentElement = document.getElementById("content");
-      const defaultImage = "bbackground.jpg";
       const displayDuration = 10000; // 10 seconds in milliseconds
       let imageQueue = [];
       let imageTimeout = null;
@@ -104,7 +98,7 @@
         elements.forEach((element) => {
           element.style.opacity = 0;
         });
-        setTimeout(callback, 1000); // 1 second for fade-out
+        setTimeout(callback, 1000);
       }
 
       function fadeInElements(elements) {
@@ -117,7 +111,7 @@
         if (imageQueue.length > 0) {
           const nextImage = imageQueue.shift();
           fadeOutElements([imageElement, contentElement], () => {
-            imageElement.src = "/uploads/" + nextImage.image;
+            imageElement.src = "data:image/jpeg;base64," + nextImage.image; // Set image source as base64 data
             textElement.textContent = nextImage.caption;
             socialidElement.textContent = nextImage.socialid;
             platformIconElement.innerHTML = getPlatformIcon(nextImage.platform);
@@ -126,25 +120,22 @@
             platformIconElement.style.display = nextImage.platform
               ? "block"
               : "none";
-            contentElement.style.display = "block"; // Ensure content is visible
+            contentElement.style.display = "block";
             fadeInElements([imageElement, contentElement]);
 
-            // Schedule next image display
             imageTimeout = setTimeout(displayNextImage, displayDuration);
           });
         } else {
-          // No more images, revert to default image
           fadeOutElements([imageElement, contentElement], () => {
-            imageElement.src = defaultImage;
+            imageElement.src = "data:image/jpeg;base64,"; // Clear image src
             textElement.textContent = "Text here";
             socialidElement.textContent = "Social";
             platformIconElement.innerHTML = "";
             textElement.style.display = "none";
             socialidElement.style.display = "none";
             platformIconElement.style.display = "none";
-            contentElement.style.display = "none"; // Hide content
+            contentElement.style.display = "none";
             fadeInElements([imageElement, contentElement]);
-            // Clear the timeout when no more images
             imageTimeout = null;
           });
         }
@@ -166,20 +157,17 @@
       socket.on("update", function (data) {
         imageQueue.push(data);
 
-        // Start displaying images if not already started
         if (!imageTimeout) {
           displayNextImage();
         }
       });
 
-      // Handle case when image queue becomes empty
       function restartImageDisplay() {
         if (imageQueue.length === 0 && imageTimeout === null) {
           displayNextImage();
         }
       }
 
-      // To restart image display if needed
       socket.on("restart", restartImageDisplay);
     </script>
   </body>
