@@ -8,7 +8,7 @@ const socketIo = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
-const PORT = 4000;
+const PORT = 80;
 
 // Set up multer to handle file uploads temporarily
 const storage = multer.memoryStorage(); // Use memory storage to avoid saving files to disk
