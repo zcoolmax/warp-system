@@ -42,6 +42,7 @@
         margin-bottom: 16px;
         border: 1px solid #ddd;
         border-radius: 4px;
+        box-sizing: border-box; /* เพิ่มบรรทัดนี้ */
       }
       button {
         background-color: #007bff;
@@ -151,11 +152,54 @@
         font-size: 20px;
         font-weight: bold;
       }
+
+      @keyframes dot-pulse {
+        0%,
+        20% {
+          opacity: 0;
+        }
+        20%,
+        80% {
+          opacity: 1;
+        }
+        80%,
+        100% {
+          opacity: 0;
+        }
+      }
+
+      .dot {
+        display: inline-block;
+        animation: dot-pulse 1s infinite;
+      }
+
+      .dot:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      .dot:nth-child(4) {
+        animation-delay: 0.6s;
+      }
+      .dot:nth-child(5) {
+        animation-delay: 0.8s;
+      }
     </style>
   </head>
   <body>
     <div id="overlay" style="display: none">
-      <div id="overlayContent">กำลังทำรายการ...</div>
+      <div id="overlayContent">
+        กำลังทำรายการ
+        <span class="dot">.</span>
+        <span class="dot">.</span>
+        <span class="dot">.</span>
+        <span class="dot">.</span>
+        <span class="dot">.</span>
+      </div>
     </div>
     <!-- Modal -->
     <div id="modal">
@@ -208,6 +252,16 @@
     </div>
 
     <form id="uploadForm" enctype="multipart/form-data">
+      <h2 style="text-align: center">แบ่งปันเรื่องราวดีๆ</h2>
+      <label for="image">รูปภาพที่จะให้แสดงบนหน้าจอ:</label>
+      <input
+        type="file"
+        id="image"
+        name="image"
+        accept=".jpg, .jpeg, .png, .gif"
+      />
+      <label for="caption">แคปชั่นหรือสิ่งที่อยากจะบอก:</label>
+      <input type="text" id="caption" name="caption" />
       <label for="platform">แพลตฟอร์มที่ต้องการแจก ID:</label>
       <select id="platform" name="platform">
         <option value="" selected>ไม่มี</option>
@@ -217,10 +271,6 @@
       </select>
       <label id="socialidLabel" for="socialid">ID ของแพลตฟอร์ม:</label>
       <input type="text" id="socialid" name="socialid" />
-      <label for="caption">แคปชั่นหรือสิ่งที่อยากจะบอก:</label>
-      <input type="text" id="caption" name="caption" />
-      <label for="image">รูปภาพที่จะให้แสดงบนหน้าจอ:</label>
-      <input type="file" id="image" name="image" />
       <div id="statusMessage"></div>
       <button type="submit">ส่งข้อมูล</button>
     </form>
@@ -230,28 +280,24 @@
       window.addEventListener("load", function () {
         document.getElementById("modal").style.display = "flex";
       });
-
       // Close the modal when the close button is clicked
       document
         .getElementById("closeModal")
         .addEventListener("click", function () {
           document.getElementById("modal").style.display = "none";
         });
-
       // Close the modal when clicking outside of the modal content
       window.addEventListener("click", function (event) {
         if (event.target === document.getElementById("modal")) {
           document.getElementById("modal").style.display = "none";
         }
       });
-
       // Close the modal when the accept button is clicked
       document
         .getElementById("acceptButton")
         .addEventListener("click", function () {
           document.getElementById("modal").style.display = "none";
         });
-
       document
         .getElementById("platform")
         .addEventListener("change", function () {
@@ -268,36 +314,29 @@
             socialidLabel.style.display = "none"; // Hide label if platform is not selected
           }
         });
-
       document.getElementById("uploadForm").onsubmit = function (event) {
         event.preventDefault();
-
         const platform = document.getElementById("platform").value;
         const socialid = document.getElementById("socialid").value;
         const caption = document.getElementById("caption").value;
         const imageFile = document.getElementById("image").files[0];
-
         const statusMessage = document.getElementById("statusMessage");
-
         // Validation checks
         if (platform && !socialid) {
           statusMessage.textContent = "กรุณากรอก Social ID เมื่อเลือกแพลตฟอร์ม";
           statusMessage.style.color = "red";
           return;
         }
-
         if (!caption) {
           statusMessage.textContent = "กรุณาใส่แคปชั่นหรือสิ่งที่อยากจะบอก";
           statusMessage.style.color = "red";
           return;
         }
-
         if (!imageFile) {
           statusMessage.textContent = "กรุณาอัพโหลดรูปภาพ";
           statusMessage.style.color = "red";
           return;
         }
-
         const allowedTypes = ["image/jpeg", "image/png"];
         if (imageFile && !allowedTypes.includes(imageFile.type)) {
           statusMessage.textContent =
@@ -305,27 +344,22 @@
           statusMessage.style.color = "red";
           return;
         }
-
         const maxSize = 3 * 1024 * 1024; // 1MB
         if (imageFile.size > maxSize) {
           // Create an image element to load the file
           const img = new Image();
           const reader = new FileReader();
-
           reader.onload = function (e) {
             img.src = e.target.result;
-
             img.onload = function () {
               // Create a canvas to resize the image
               const canvas = document.createElement("canvas");
               const ctx = canvas.getContext("2d");
-
               // Set desired width and height
               const MAX_WIDTH = 1920; // you can adjust this
               const MAX_HEIGHT = 1080; // you can adjust this
               let width = img.width;
               let height = img.height;
-
               // Calculate the new dimensions
               if (width > height) {
                 if (width > MAX_WIDTH) {
@@ -338,11 +372,9 @@
                   height = MAX_HEIGHT;
                 }
               }
-
               canvas.width = width;
               canvas.height = height;
               ctx.drawImage(img, 0, 0, width, height);
-
               // Convert the canvas to a Blob
               canvas.toBlob(
                 function (blob) {
@@ -350,11 +382,9 @@
                     type: imageFile.type,
                     lastModified: Date.now(),
                   });
-
                   // Prepare FormData and add resized file
                   const formData = new FormData(event.target);
                   formData.set("image", resizedFile);
-
                   // Proceed to send the form data
                   uploadFormData(formData);
                 },
@@ -363,14 +393,12 @@
               ); // Quality can be adjusted (0.8 means 80%)
             };
           };
-
           reader.readAsDataURL(imageFile);
         } else {
           // If image is already within size limit, proceed directly
           uploadFormData(new FormData(event.target));
         }
       };
-
       function uploadFormData(formData) {
         // แสดง overlay
         document.getElementById("overlay").style.display = "flex";
@@ -400,10 +428,25 @@
             statusMessage.style.color = "red";
           })
           .finally(() => {
-            // ซ่อน overlay
-            document.getElementById("overlay").style.display = "none";
+            // ซ่อน overlay หลังจากแสดงอย่างน้อย 1 วินาที
+            setTimeout(() => {
+              document.getElementById("overlay").style.display = "none";
+            }, 1000);
           });
       }
+      let dotCount = 0;
+      const maxDots = 5;
+      const overlayContent = document.getElementById("overlayContent");
+
+      function updateDots() {
+        const dots = overlayContent.querySelectorAll(".dot");
+        dots.forEach((dot) => (dot.style.opacity = "0")); // ซ่อนจุดทั้งหมด
+        dots[dotCount].style.opacity = "1"; // แสดงจุดปัจจุบัน
+        dotCount = (dotCount + 1) % maxDots; // เพิ่มจำนวนนับและรีเซ็ตเมื่อถึง 5
+      }
+
+      // เรียกใช้ updateDots ทุกๆ 1 วินาที
+      setInterval(updateDots, 1000);
     </script>
   </body>
 </html>
