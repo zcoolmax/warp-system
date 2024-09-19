@@ -201,6 +201,7 @@
         <span class="dot">.</span>
       </div>
     </div>
+
     <!-- Modal -->
     <div id="modal">
       <div id="modalContent">
@@ -208,10 +209,10 @@
         <h2>วิธีการใช้งาน</h2>
         <p>โปรดปฏิบัติตามขั้นตอนด้านล่างเพื่อใช้งานโปรแกรม:</p>
         <ol>
+          <li>เลือกไฟล์รูปภาพที่จะให้แสดงบนหน้าจอ</li>
+          <li>ป้อนแคปชั่นหรือสิ่งที่อยากจะบอก</li>
           <li>เลือกแพลตฟอร์มที่คุณต้องการจะสื่อสารจากรายการที่ให้ไว้</li>
           <li>กรอก ID ของแพลตฟอร์มที่เลือกไว้</li>
-          <li>ป้อนแคปชั่นที่ต้องการจะสื่อสาร</li>
-          <li>เลือกไฟล์รูปภาพที่ต้องการอัปโหลด</li>
           <li>คลิกปุ่ม <strong>ส่งข้อมูล</strong> เพื่อทำรายการต่อ</li>
           <li>รูปภาพจะปรากฏเป็นเวลา 30 วินาที จากนั้นจะหายไปอัตโนมัติ</li>
         </ol>
@@ -272,133 +273,28 @@
       <label id="socialidLabel" for="socialid">ID ของแพลตฟอร์ม:</label>
       <input type="text" id="socialid" name="socialid" />
       <div id="statusMessage"></div>
+      <p>รูปภาพจะปรากฏเป็นเวลา 30 วินาที และจะหายไปโดยอัตโนมัติ</p>
       <button type="submit">ส่งข้อมูล</button>
     </form>
 
     <script>
-      // Show the modal when the page loads
-      window.addEventListener("load", function () {
-        document.getElementById("modal").style.display = "flex";
-      });
-      // Close the modal when the close button is clicked
-      document
-        .getElementById("closeModal")
-        .addEventListener("click", function () {
-          document.getElementById("modal").style.display = "none";
-        });
-      // Close the modal when clicking outside of the modal content
-      window.addEventListener("click", function (event) {
-        if (event.target === document.getElementById("modal")) {
-          document.getElementById("modal").style.display = "none";
-        }
-      });
-      // Close the modal when the accept button is clicked
-      document
-        .getElementById("acceptButton")
-        .addEventListener("click", function () {
-          document.getElementById("modal").style.display = "none";
-        });
-      document
-        .getElementById("platform")
-        .addEventListener("change", function () {
-          const platform = this.value;
-          const socialidElement = document.getElementById("socialid");
-          const socialidLabel = document.getElementById("socialidLabel");
+      let modalTimer;
+      let overlayTimeout;
 
-          if (platform) {
-            socialidElement.style.display = "block";
-            socialidLabel.style.display = "block"; // Show label if platform is selected
-            socialidElement.value = ""; // Clear social ID if platform is selected
-          } else {
-            socialidElement.style.display = "none";
-            socialidLabel.style.display = "none"; // Hide label if platform is not selected
-          }
-        });
-      document.getElementById("uploadForm").onsubmit = function (event) {
-        event.preventDefault();
-        const platform = document.getElementById("platform").value;
-        const socialid = document.getElementById("socialid").value;
-        const caption = document.getElementById("caption").value;
-        const imageFile = document.getElementById("image").files[0];
-        const statusMessage = document.getElementById("statusMessage");
-        // Validation checks
-        if (platform && !socialid) {
-          statusMessage.textContent = "กรุณากรอก Social ID เมื่อเลือกแพลตฟอร์ม";
-          statusMessage.style.color = "red";
-          return;
-        }
-        if (!caption) {
-          statusMessage.textContent = "กรุณาใส่แคปชั่นหรือสิ่งที่อยากจะบอก";
-          statusMessage.style.color = "red";
-          return;
-        }
-        if (!imageFile) {
-          statusMessage.textContent = "กรุณาอัพโหลดรูปภาพ";
-          statusMessage.style.color = "red";
-          return;
-        }
-        const allowedTypes = ["image/jpeg", "image/png"];
-        if (imageFile && !allowedTypes.includes(imageFile.type)) {
-          statusMessage.textContent =
-            "โปรดอัปโหลดไฟล์รูปภาพที่ถูกต้อง (JPEG หรือ PNG)";
-          statusMessage.style.color = "red";
-          return;
-        }
-        const maxSize = 3 * 1024 * 1024; // 1MB
-        if (imageFile.size > maxSize) {
-          // Create an image element to load the file
-          const img = new Image();
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            img.src = e.target.result;
-            img.onload = function () {
-              // Create a canvas to resize the image
-              const canvas = document.createElement("canvas");
-              const ctx = canvas.getContext("2d");
-              // Set desired width and height
-              const MAX_WIDTH = 1920; // you can adjust this
-              const MAX_HEIGHT = 1080; // you can adjust this
-              let width = img.width;
-              let height = img.height;
-              // Calculate the new dimensions
-              if (width > height) {
-                if (width > MAX_WIDTH) {
-                  height *= MAX_WIDTH / width;
-                  width = MAX_WIDTH;
-                }
-              } else {
-                if (height > MAX_HEIGHT) {
-                  width *= MAX_HEIGHT / height;
-                  height = MAX_HEIGHT;
-                }
-              }
-              canvas.width = width;
-              canvas.height = height;
-              ctx.drawImage(img, 0, 0, width, height);
-              // Convert the canvas to a Blob
-              canvas.toBlob(
-                function (blob) {
-                  const resizedFile = new File([blob], imageFile.name, {
-                    type: imageFile.type,
-                    lastModified: Date.now(),
-                  });
-                  // Prepare FormData and add resized file
-                  const formData = new FormData(event.target);
-                  formData.set("image", resizedFile);
-                  // Proceed to send the form data
-                  uploadFormData(formData);
-                },
-                imageFile.type,
-                0.8
-              ); // Quality can be adjusted (0.8 means 80%)
-            };
-          };
-          reader.readAsDataURL(imageFile);
-        } else {
-          // If image is already within size limit, proceed directly
-          uploadFormData(new FormData(event.target));
-        }
-      };
+      function showModal() {
+        document.getElementById("modal").style.display = "flex";
+        resetModalTimer();
+      }
+
+      function hideModal() {
+        document.getElementById("modal").style.display = "none";
+      }
+
+      function resetModalTimer() {
+        clearTimeout(modalTimer);
+        modalTimer = setTimeout(hideModal, 10000);
+      }
+
       function uploadFormData(formData) {
         // แสดง overlay
         document.getElementById("overlay").style.display = "flex";
@@ -434,19 +330,78 @@
             }, 1000);
           });
       }
-      let dotCount = 0;
-      const maxDots = 5;
-      const overlayContent = document.getElementById("overlayContent");
 
-      function updateDots() {
-        const dots = overlayContent.querySelectorAll(".dot");
-        dots.forEach((dot) => (dot.style.opacity = "0")); // ซ่อนจุดทั้งหมด
-        dots[dotCount].style.opacity = "1"; // แสดงจุดปัจจุบัน
-        dotCount = (dotCount + 1) % maxDots; // เพิ่มจำนวนนับและรีเซ็ตเมื่อถึง 5
+      document.getElementById("uploadForm").onsubmit = function (event) {
+        event.preventDefault();
+        const platform = document.getElementById("platform").value;
+        const socialid = document.getElementById("socialid").value;
+        const caption = document.getElementById("caption").value;
+        const imageFile = document.getElementById("image").files[0];
+
+        // Validation checks
+        if (platform && !socialid) {
+          setStatusMessage("กรุณากรอก Social ID เมื่อเลือกแพลตฟอร์ม", "red");
+          return;
+        }
+        if (!caption) {
+          setStatusMessage("กรุณาใส่แคปชั่นหรือสิ่งที่อยากจะบอก", "red");
+          return;
+        }
+        if (!imageFile) {
+          setStatusMessage("กรุณาอัพโหลดรูปภาพ", "red");
+          return;
+        }
+        const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+        if (!allowedTypes.includes(imageFile.type)) {
+          setStatusMessage(
+            "โปรดอัปโหลดไฟล์รูปภาพที่ถูกต้อง (JPEG, PNG, GIF)",
+            "red"
+          );
+          return;
+        }
+        const maxSize = 3 * 1024 * 1024; // 3MB
+        if (imageFile.size > maxSize) {
+          setStatusMessage("ไฟล์ต้องไม่เกิน 3MB", "red");
+          return;
+        }
+
+        uploadFormData(new FormData(event.target));
+      };
+
+      function setStatusMessage(message, color) {
+        const statusMessage = document.getElementById("statusMessage");
+        statusMessage.textContent = message;
+        statusMessage.style.color = color;
       }
 
-      // เรียกใช้ updateDots ทุกๆ 1 วินาที
-      setInterval(updateDots, 1000);
+      // Event Listeners
+      document
+        .getElementById("platform")
+        .addEventListener("change", function () {
+          const socialidElement = document.getElementById("socialid");
+          const socialidLabel = document.getElementById("socialidLabel");
+          if (this.value) {
+            socialidElement.style.display = "block";
+            socialidLabel.style.display = "block";
+          } else {
+            socialidElement.style.display = "none";
+            socialidLabel.style.display = "none";
+          }
+        });
+
+      window.addEventListener("load", showModal);
+      document
+        .getElementById("closeModal")
+        .addEventListener("click", hideModal);
+      document
+        .getElementById("acceptButton")
+        .addEventListener("click", hideModal);
+
+      window.addEventListener("click", function () {
+        if (document.getElementById("modal").style.display === "flex") {
+          resetModalTimer();
+        }
+      });
     </script>
   </body>
 </html>
